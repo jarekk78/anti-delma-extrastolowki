@@ -17,6 +17,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -29,6 +31,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import org.apache.http.client.ClientProtocolException;
+import org.apache.logging.log4j.core.config.plugins.convert.TypeConverters.PatternConverter;
 
 import antidelma.AntidelmaRequests.AntidelmaResultType;
 
@@ -59,6 +62,7 @@ public class MainWindow extends JFrame {
 	}
 
 	private Component prevTop = null;
+	private JButton confirmBtn;
 	public void addWithLabel( Component label, Component comp ) {
 		Container c = getContentPane();
 		SpringLayout layout = (SpringLayout)this.getContentPane().getLayout();
@@ -102,7 +106,10 @@ public class MainWindow extends JFrame {
 		addWithLabel( captchaLabel = new JLabel( "tekst captcha" ), captchaTx = new JTextField(20) );
 		addWithLabel( new JLabel(""), sendBtn = new JButton( "Wyślij" ) );
 
+		addWithLabel( new JLabel(""), confirmBtn = new JButton( "Potwierdzenia" ) );
+		
 		sendBtn.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent e) { tryToPost(); }  });
+		confirmBtn.addActionListener( new ActionListener() { public void actionPerformed(ActionEvent e) { confirm(); }  });
 		getRootPane().setDefaultButton(sendBtn);
 		dispCaptcha.setImage( null );
 		dispCaptcha.addMouseListener( new MouseAdapter() {
@@ -113,7 +120,7 @@ public class MainWindow extends JFrame {
 			}
 		} );
 		setSize(400,220);
-		setMinimumSize( new Dimension( 400,220 ));
+		setMinimumSize( new Dimension( 400,250 ));
 		prefs = Preferences.userRoot().node(this.getClass().getName());
 
 		login.setText( prefs.get("login", "wpisz login") );
@@ -134,6 +141,25 @@ public class MainWindow extends JFrame {
 		} );
 		this.setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
 		setVisible(true);
+	}
+
+	protected void confirm() {
+		String mails = JOptionPane.showInputDialog("Wklej maile z linkami potwierdzajacymi");
+		if (mails != null) {
+			Pattern p = Pattern.compile( "(http://www\\.extrastolowki\\.pl/vote_confirmation/[a-z0-9/]*)" );
+			Matcher m = p.matcher( mails );
+			AntidelmaRequests ar = new AntidelmaRequests();
+			while (m.find()) {
+				System.out.println( m.group() );
+				try {
+					ar.confirm( m.group() );
+				} catch (ClientProtocolException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	public void windowClosing() {
