@@ -11,6 +11,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.RenderedImage;
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -20,6 +22,7 @@ import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -140,6 +143,7 @@ public class MainWindow extends JFrame {
 			}
 		} );
 		this.setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
+		captchaTx.requestFocus();
 		setVisible(true);
 	}
 
@@ -199,6 +203,7 @@ public class MainWindow extends JFrame {
 			AntidelmaResultType result = ar.doVote( cookieStr, captchaTx.getText(), wysylany.getText()+"@gmail.com" );
 			switch (result) {
 			case OK:
+				storeImage( dispCaptcha.getImage(), captchaTx.getText().toUpperCase() );
 				genNextLogin();
 				getNewCaptcha();
 				captchaTx.setText("");
@@ -219,6 +224,25 @@ public class MainWindow extends JFrame {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	
+	}
+
+	private void storeImage(Image image, String text) {
+		File folder = new File("captcha-storage");
+		if (folder.exists() && folder.isDirectory()) {
+			File outputFile;
+			int idx = 0;
+			do {
+				outputFile = new File( folder.getAbsolutePath()+File.separator+text+( (idx>0)?"_"+String.format("%04d", idx):"")+".png" );
+				idx++;
+			} while (outputFile.exists());
+			try {
+				ImageIO.write((RenderedImage) image, "png", outputFile );
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 	}
 
 	public static void main(String[] args) {
